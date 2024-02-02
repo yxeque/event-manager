@@ -18,10 +18,26 @@ end
 
 def extract_datetime(str)
   date, time = str.split(' ')
-  date = Date.strptime(date_str, '%d-%m-%Y') rescue nil
-  time = Time.strptime(time_str, '%H:%M:%S') rescue nil if date
+  # Enhanced logging for debugging
+  puts "Parsing date: #{date}"
+  puts "Parsing time: #{time}"
 
-  [date, time]
+  date = Date.strptime(date, '%d-%m-%Y') rescue nil
+  time = Time.strptime(time, '%H:%M') rescue nil
+
+  # Check for valid date and time
+  if date && time
+    puts "Parsed date: #{date}"
+    puts "Parsed time: #{time}"
+    [date, time]
+  else
+    puts "Invalid date or time format"
+    nil
+  end
+
+  rescue ArgumentError => e
+  puts "Invalid date or time format: #{e.message}"
+  nil
 end
 
 def find_peak_hours(registrations)
@@ -30,22 +46,32 @@ def find_peak_hours(registrations)
 
   registrations.each do |row|
     total_registrations += 1
+
+    puts "Raw regdate value: #{row[:regdate]}"
+
     datetime = extract_datetime(row[:regdate])
-    next unless datetime && datetime[0]
-  
-    hour = datetime[0].time.hour
+
+    puts "Extracted datetime: #{datetime}"
+
+    next unless datetime && datetime.is_a?(Array) && datetime[1]
+
+    hour = datetime[1].hour
+
+    puts "Calculated hour: #{hour}"
+
     hour_counts[hour] += 1
-    puts hour_counts
+    puts "Hour counts: #{hour_counts}"
   end
 
+  puts hour_counts
   max_count = hour_counts.max
   puts max_count
-  peak_hours = hour_counts.each_with_index.find { |count, hour| count == max_count }&.last
+  peak_hours = hour_counts.each_with_index.select { |count, hour| count == max_count }.map(&:last)
   puts peak_hours
 
   puts "Total registrations: #{total_registrations}"
 
-  if hour_counts.any?(&:positive?)
+  if peak_hours.any?
     peak_hours_formatted = peak_hours.map do |hour|
       if hour == 0
         "12 am"
@@ -62,7 +88,6 @@ def find_peak_hours(registrations)
   else
     puts "No peak hours found"
   end
-
 end
 
 def legislators_by_zipcode(zip)
