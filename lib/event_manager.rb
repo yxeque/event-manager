@@ -18,73 +18,55 @@ end
 
 def extract_datetime(str)
   date, time = str.split(' ')
-  # Enhanced logging for debugging
-  puts "Parsing date: #{date}"
-  puts "Parsing time: #{time}"
+  puts "Parsing date: '", date, "'", "Parsing time: '", time, "'"
 
-  date = Date.strptime(date, '%d-%m-%Y') rescue nil
-  time = Time.strptime(time, '%H:%M') rescue nil
+  begin
+    date = Date.strptime(date, '%m/%d/%y')
+    time = Time.strptime(time, '%H:%M')
 
-  # Check for valid date and time
-  if date && time
-    puts "Parsed date: #{date}"
-    puts "Parsed time: #{time}"
     [date, time]
-  else
-    puts "Invalid date or time format"
+  rescue ArgumentError => e
+    puts "Invalid date or time format: '", str, "'", "Error:", e.message
     nil
   end
-
-  rescue ArgumentError => e
-  puts "Invalid date or time format: #{e.message}"
-  nil
 end
 
 def find_peak_hours(registrations)
-  hour_counts = Array.new(24, 0)
+  hour_counts = Hash.new(0)
   total_registrations = 0
 
+  # Handle invalid entries
   registrations.each do |row|
-    total_registrations += 1
-
-    puts "Raw regdate value: #{row[:regdate]}"
-
     datetime = extract_datetime(row[:regdate])
-
-    puts "Extracted datetime: #{datetime}"
-
     next unless datetime && datetime.is_a?(Array) && datetime[1]
 
+    total_registrations += 1
     hour = datetime[1].hour
 
-    puts "Calculated hour: #{hour}"
-
     hour_counts[hour] += 1
-    puts "Hour counts: #{hour_counts}"
+    puts "Hour counts:", hour_counts
   end
 
-  puts hour_counts
-  max_count = hour_counts.max
-  puts max_count
-  peak_hours = hour_counts.each_with_index.select { |count, hour| count == max_count }.map(&:last)
-  puts peak_hours
+  puts "Hour_counts: ", hour_counts
+  max_count = hour_counts.values.max
+  puts "Max_count: ", max_count
+  peak_hours = hour_counts.select { |hour, count| count == max_count }.map(&:first)
+  puts "Peak_Hours: ", peak_hours
 
-  puts "Total registrations: #{total_registrations}"
+  puts "total_registrations: ", total_registrations
 
   if peak_hours.any?
     peak_hours_formatted = peak_hours.map do |hour|
-      if hour == 0
-        "12 am"
-      elsif hour < 12
-        "#{hour} am"
-      elsif hour == 12
-        "noon"
-      else
-        "#{hour - 12} pm"
+      case hour
+        when 0
+          "12 am"
+        when 12
+          "noon"
+        else
+          "#{hour < 12 ? '12 am' : 'pm'}"
       end
     end
-
-    puts "Peak hours: #{peak_hours_formatted.join(', ')} (with #{max_count} registrations each)"
+    puts "Peak hours:", peak_hours_formatted.join(', ')
   else
     puts "No peak hours found"
   end
