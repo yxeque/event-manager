@@ -16,6 +16,55 @@ def clean_phone_number(phone_number)
   valid_number
 end
 
+def extract_datetime(str)
+  date, time = str.split(' ')
+  date = Date.strptime(date_str, '%d-%m-%Y') rescue nil
+  time = Time.strptime(time_str, '%H:%M:%S') rescue nil if date
+
+  [date, time]
+end
+
+def find_peak_hours(registrations)
+  hour_counts = Array.new(24, 0)
+  total_registrations = 0
+
+  registrations.each do |row|
+    total_registrations += 1
+    datetime = extract_datetime(row[:regdate])
+    next unless datetime && datetime[0]
+  
+    hour = datetime[0].time.hour
+    hour_counts[hour] += 1
+    puts hour_counts
+  end
+
+  max_count = hour_counts.max
+  puts max_count
+  peak_hours = hour_counts.each_with_index.find { |count, hour| count == max_count }&.last
+  puts peak_hours
+
+  puts "Total registrations: #{total_registrations}"
+
+  if hour_counts.any?(&:positive?)
+    peak_hours_formatted = peak_hours.map do |hour|
+      if hour == 0
+        "12 am"
+      elsif hour < 12
+        "#{hour} am"
+      elsif hour == 12
+        "noon"
+      else
+        "#{hour - 12} pm"
+      end
+    end
+
+    puts "Peak hours: #{peak_hours_formatted.join(', ')} (with #{max_count} registrations each)"
+  else
+    puts "No peak hours found"
+  end
+
+end
+
 def legislators_by_zipcode(zip)
   civic_info = Google::Apis::CivicinfoV2::CivicInfoService.new
   civic_info.key = 'AIzaSyClRzDqDh5MsXwnCWi0kOiiBivP6JsSyBw'
@@ -49,6 +98,8 @@ contents = CSV.open(
   headers: true,
   header_converters: :symbol
 )
+
+peak_hours = find_peak_hours(contents)
 
 template_letter = File.read('form_letter.erb')
 erb_template = ERB.new template_letter
