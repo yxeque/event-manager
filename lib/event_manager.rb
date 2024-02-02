@@ -7,23 +7,13 @@ def clean_zipcode(zipcode)
 end
 
 def clean_phone_number(phone_number)
-  return nil if phone_number.nil? || phone_number.empty?
-
-  phone_number = phone_number.strip
+  return "Missing or Invalid Phone Number" unless phone_number&.strip
 
   valid_number = phone_number.gsub(/[^0-9]/, '')
-  case valid_number.length
-  when 10
-    return valid_number
-  when 11
-    if valid_number[0] == '1'
-      return valid_number[1..-1]
-    else
-      return nil
-    end
-  else
-    return nil
-  end
+  return "Missing or Invalid Phone Number" unless [10, 11].include?(valid_number.length)
+  return valid_number[1..-1] if valid_number.length == 11 && valid_number[0] == '1'
+
+  valid_number
 end
 
 def legislators_by_zipcode(zip)
