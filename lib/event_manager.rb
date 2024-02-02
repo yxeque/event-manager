@@ -18,7 +18,6 @@ end
 
 def extract_datetime(str)
   date, time = str.split(' ')
-  puts "Parsing date: '", date, "'", "Parsing time: '", time, "'"
 
   begin
     date = Date.strptime(date, '%m/%d/%y')
@@ -32,44 +31,31 @@ def extract_datetime(str)
 end
 
 def find_peak_hours(registrations)
-  hour_counts = Hash.new(0)
+  hour_registrations = Hash.new(0)
   total_registrations = 0
 
-  # Handle invalid entries
   registrations.each do |row|
-    datetime = extract_datetime(row[:regdate])
-    next unless datetime && datetime.is_a?(Array) && datetime[1]
+    registration_datetime = extract_datetime(row[:regdate])
+    next unless registration_datetime && registration_datetime.is_a?(Array) && registration_datetime[1]
 
     total_registrations += 1
-    hour = datetime[1].hour
-
-    hour_counts[hour] += 1
-    puts "Hour counts:", hour_counts
+    hour = registration_datetime[1].hour
+    hour_registrations[hour] += 1
   end
 
-  puts "Hour_counts: ", hour_counts
-  max_count = hour_counts.values.max
-  puts "Max_count: ", max_count
-  peak_hours = hour_counts.select { |hour, count| count == max_count }.map(&:first)
-  puts "Peak_Hours: ", peak_hours
+  peak_hours = hour_registrations.select { |hour, count| count == hour_registrations.values.max }.map(&:first)
 
-  puts "total_registrations: ", total_registrations
-
-  if peak_hours.any?
-    peak_hours_formatted = peak_hours.map do |hour|
-      case hour
-        when 0
-          "12 am"
-        when 12
-          "noon"
-        else
-          "#{hour < 12 ? '12 am' : 'pm'}"
-      end
-    end
-    puts "Peak hours:", peak_hours_formatted.join(', ')
-  else
-    puts "No peak hours found"
+  puts "Peak Registration Hours:"
+  puts "Hour | Registrations"
+  puts "-" * 20
+  hour_registrations.sort.each do |hour, count|
+    hour_num = hour % 12
+    hour_num = 12 if hour_num == 0
+    am_pm = hour < 12 ? 'am' : 'pm'
+    puts sprintf("%2d %s | %d", hour_num, am_pm, count)
   end
+  puts "-" * 20
+  puts sprintf("Total Registrations: %d", total_registrations)
 end
 
 def legislators_by_zipcode(zip)
